@@ -1,0 +1,550 @@
+<view class="page">
+
+<!-- ========================= -->
+<!-- 顶部 -->
+<!-- ========================= -->
+
+<view class="header">
+
+  <view class="title">
+    AI 倒推助手
+  </view>
+
+  <view class="subtitle">
+    告诉我你想完成什么，
+    我帮你想到接下来该做什么。
+  </view>
+
+</view>
+
+
+<!-- ========================= -->
+<!-- 输入目标 -->
+<!-- ========================= -->
+
+<view class="input-card">
+
+  <view class="input-title">
+    你想完成什么？
+  </view>
+
+  <textarea
+    class="goal-input"
+    placeholder=""
+    value="{{goal}}"
+    maxlength="500"
+    bindinput="onGoalInput"
+  />
+
+  <button
+    class="start-button"
+    loading="{{loading}}"
+    disabled="{{loading}}"
+    bindtap="startPlanning"
+  >
+    {{loading ? "AI 正在规划..." : "开始规划"}}
+  </button>
+
+</view>
+
+
+<!-- ========================= -->
+<!-- Loading -->
+<!-- ========================= -->
+
+<view
+  wx:if="{{loading}}"
+  class="loading-card"
+>
+
+  <view class="loading-title">
+    AI 正在帮你倒推
+  </view>
+
+  <view class="loading-text">
+    正在分析关键事项、时间节点和执行步骤……
+  </view>
+
+</view>
+
+
+<!-- ========================= -->
+<!-- 错误 -->
+<!-- ========================= -->
+
+<view
+  wx:if="{{errorMessage}}"
+  class="error-card"
+>
+
+  <view class="error-title">
+    出现了一点问题
+  </view>
+
+  <view class="error-text">
+    {{errorMessage}}
+  </view>
+
+  <button
+    class="retry-button"
+    bindtap="startPlanning"
+  >
+    重新规划
+  </button>
+
+</view>
+
+
+<!-- ========================= -->
+<!-- AI结果 -->
+<!-- ========================= -->
+
+<view
+  wx:if="{{showResult}}"
+>
+
+
+  <!-- ========================= -->
+  <!-- 我理解你的目标 -->
+  <!-- ========================= -->
+
+  <view class="result-card">
+
+    <view class="card-title">
+      🧠 我理解你的目标
+    </view>
+
+    <view class="understanding">
+      {{understanding}}
+    </view>
+
+  </view>
+
+
+  <!-- ========================= -->
+  <!-- 建议 -->
+  <!-- ========================= -->
+
+  <view
+    wx:if="{{suggestions.length > 0}}"
+    class="result-card"
+  >
+
+    <view class="card-title">
+      💡 你可能还没想到
+    </view>
+
+    <view
+      wx:for="{{suggestions}}"
+      wx:key="index"
+      class="suggestion-item"
+    >
+
+      <view class="suggestion-dot"></view>
+
+      <view class="suggestion-text">
+        {{item}}
+      </view>
+
+    </view>
+
+  </view>
+
+
+  <!-- ========================= -->
+  <!-- 关键事项 -->
+  <!-- ========================= -->
+
+  <view
+    wx:if="{{importantActions.length > 0}}"
+    class="result-card"
+  >
+
+    <view class="card-title">
+      ⚠️ 关键事项
+    </view>
+
+    <view class="card-description">
+      这些事情比较容易被忽略，
+      但可能会影响整个计划。
+    </view>
+
+
+    <view
+      wx:for="{{importantActions}}"
+      wx:key="index"
+      class="important-item {{item.completed ? 'completed' : ''}}"
+      data-index="{{index}}"
+      bindtap="toggleImportantAction"
+    >
+
+      <view class="checkbox">
+        <text
+          wx:if="{{item.completed}}"
+        >
+          ✓
+        </text>
+      </view>
+
+      <view class="important-content">
+
+        <view class="important-title">
+          {{item.title}}
+        </view>
+
+        <view class="important-reason">
+          {{item.reason}}
+        </view>
+
+      </view>
+
+    </view>
+
+  </view>
+
+
+  <!-- ========================= -->
+  <!-- DDL -->
+  <!-- ========================= -->
+
+  <view
+    wx:if="{{deadlines.length > 0}}"
+    class="result-card"
+  >
+
+    <view class="card-title">
+      📅 重要时间节点
+    </view>
+
+    <view class="card-description">
+      这些节点需要提前留意。
+      有明确日期后，可以进一步倒推。
+    </view>
+
+
+    <view
+      wx:for="{{deadlines}}"
+      wx:key="index"
+      class="deadline-item"
+    >
+
+      <view class="deadline-main">
+
+        <view class="deadline-title">
+          {{item.title}}
+        </view>
+
+        <view class="deadline-date">
+          {{item.deadline}}
+        </view>
+
+      </view>
+
+      <view
+        class="deadline-tag {{item.importance}}"
+      >
+        {{item.importance === 'high' ? '重要' : item.importance === 'medium' ? '注意' : '参考'}}
+      </view>
+
+    </view>
+
+  </view>
+
+
+  <!-- ========================= -->
+  <!-- 材料 -->
+  <!-- ========================= -->
+
+  <view
+    wx:if="{{materials.length > 0}}"
+    class="result-card"
+  >
+
+    <view class="card-title">
+      📄 可能需要准备
+    </view>
+
+    <view
+      wx:for="{{materials}}"
+      wx:key="index"
+      class="material-item"
+    >
+
+      <view class="material-check">
+        ✓
+      </view>
+
+      <view>
+        {{item}}
+      </view>
+
+    </view>
+
+  </view>
+
+
+  <!-- ========================= -->
+  <!-- 资源 -->
+  <!-- ========================= -->
+
+  <view
+    wx:if="{{resources.length > 0}}"
+    class="result-card"
+  >
+
+    <view class="card-title">
+      🔗 去哪里办理 / 查询
+    </view>
+
+    <view
+      wx:for="{{resources}}"
+      wx:key="index"
+      class="resource-item"
+    >
+
+      <view class="resource-title">
+        {{item.title}}
+      </view>
+
+      <view class="resource-description">
+        {{item.description}}
+      </view>
+
+      <view
+        wx:if="{{item.type === 'official'}}"
+        class="official-tag"
+      >
+        官方渠道
+      </view>
+
+    </view>
+
+  </view>
+
+
+  <!-- ================================================= -->
+  <!-- ⭐ 核心：我的倒推计划 -->
+  <!-- ================================================= -->
+
+  <view
+    wx:if="{{plan.stages.length > 0}}"
+    class="plan-card"
+  >
+
+    <view class="plan-header">
+
+      <view class="plan-title">
+        🗺️ 我的倒推计划
+      </view>
+
+      <view class="plan-subtitle">
+        从最终目标，一步一步倒推到现在
+      </view>
+
+    </view>
+
+
+    <view
+      wx:for="{{plan.stages}}"
+      wx:key="index"
+      class="stage"
+    >
+
+      <!-- 阶段头部 -->
+
+      <view class="stage-header">
+
+        <view class="stage-number">
+          {{index + 1}}
+        </view>
+
+        <view class="stage-info">
+
+          <view class="stage-name">
+            {{item.stage}}
+          </view>
+
+          <view class="stage-time">
+            {{item.time}}
+          </view>
+
+        </view>
+
+      </view>
+
+
+      <!-- 阶段目标 -->
+
+      <view
+        wx:if="{{item.goal}}"
+        class="stage-goal"
+      >
+        <text class="stage-goal-label">
+          阶段目标：
+        </text>
+
+        {{item.goal}}
+      </view>
+
+
+      <!-- 任务 -->
+
+      <view
+        wx:for="{{item.tasks}}"
+        wx:for-item="task"
+        wx:for-index="taskIndex"
+        wx:key="taskIndex"
+        class="task-item {{task.completed ? 'task-completed' : ''}}"
+        data-stage-index="{{index}}"
+        data-task-index="{{taskIndex}}"
+        bindtap="toggleTask"
+      >
+
+        <view class="task-checkbox">
+
+          <text
+            wx:if="{{task.completed}}"
+          >
+            ✓
+          </text>
+
+        </view>
+
+        <view class="task-content">
+
+          <view class="task-title">
+            {{task.title}}
+          </view>
+
+          <view
+            wx:if="{{task.description}}"
+            class="task-description"
+          >
+            {{task.description}}
+          </view>
+
+        </view>
+
+      </view>
+
+    </view>
+
+  </view>
+
+
+  <!-- ========================= -->
+  <!-- 现在最应该做 -->
+  <!-- ========================= -->
+
+  <view class="current-card">
+
+    <view class="current-label">
+      🎯 现在最应该做
+    </view>
+
+    <view class="current-text">
+      {{currentStep}}
+    </view>
+
+  </view>
+
+
+  <!-- ========================= -->
+  <!-- AI真正需要时才提问 -->
+  <!-- ========================= -->
+
+  <view
+    wx:if="{{showQuestion}}"
+    class="question-card"
+  >
+
+    <view class="card-title">
+      ❓ 有一个关键信息需要确认
+    </view>
+
+    <view class="question-text">
+      {{nextQuestion}}
+    </view>
+
+    <textarea
+      class="answer-input"
+      placeholder="输入你的回答"
+      value="{{answerInput}}"
+      maxlength="500"
+      bindinput="onAnswerInput"
+    />
+
+    <button
+      class="answer-button"
+      loading="{{loading}}"
+      bindtap="submitAnswer"
+    >
+      更新计划
+    </button>
+
+    <button
+      class="skip-button"
+      bindtap="skipQuestion"
+    >
+      我还不知道，先继续
+    </button>
+
+  </view>
+
+
+  <!-- ========================= -->
+  <!-- 操作 -->
+  <!-- ========================= -->
+
+  <view class="actions">
+
+    <button
+      class="save-button"
+      bindtap="savePlan"
+    >
+      {{saved ? "✓ 计划已保存" : "保存计划"}}
+    </button>
+
+    <button
+      class="reset-button"
+      bindtap="resetPlanning"
+    >
+      重新规划
+    </button>
+
+  </view>
+
+
+  <!-- ========================= -->
+  <!-- 保存提示 -->
+  <!-- ========================= -->
+
+  <view
+    wx:if="{{saved}}"
+    class="saved-tip"
+  >
+    计划已经保存在本地，下次打开小程序可以继续查看。
+  </view>
+
+
+</view>
+
+
+<!-- ========================= -->
+<!-- 底部 -->
+<!-- ========================= -->
+
+<view class="footer">
+
+  <view>
+    AI 倒推助手
+  </view>
+
+  <view>
+    不只是告诉你要做什么，
+    还帮你发现你可能不知道的事情。
+  </view>
+
+</view>
+
+</view>
